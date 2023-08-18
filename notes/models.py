@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from pytils.translit import slugify
+from pytils.translit import slugify  # type: ignore[import]
 
 
 class Note(models.Model):
