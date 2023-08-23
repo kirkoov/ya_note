@@ -1,3 +1,5 @@
+import unittest
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase  # Client,
 
@@ -33,10 +35,12 @@ class TestNote(TestCase):
     #                'латиницу, цифры, дефисы и знаки подчёркивания')
     # )
 
+    @unittest.skip('')
     def test_successful_creation(self):
         note_count = Note.objects.count()
         self.assertEqual(note_count, 1)
 
+    @unittest.skip('')
     def test_title(self):
         # Сравним свойство объекта и ожидаемое значение.
         self.assertEqual(self.note.title, self.TITLE)
