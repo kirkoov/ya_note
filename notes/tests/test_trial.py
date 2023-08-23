@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase  # Client,
 
 from notes.models import Note
 
@@ -14,6 +14,9 @@ class TestNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        # cls.user_client = Client()
+        # cls.user = User.objects.create(username='testUser')
+        # cls.user_client.force_login(cls.user)
         cls.author = User.objects.create(username='123 Толстой')
         cls.note = Note.objects.create(
             title=cls.TITLE,
