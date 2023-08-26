@@ -18,12 +18,18 @@ class TestRoutes(TestCase):
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Лев Толстой')
         cls.reader = User.objects.create(username='Читатель Простой')
-
         cls.note = Note.objects.create(
             title='Заголовок заметки Льва Николаича',
             text='Текст заметки Толстого Л.В.',
             author=cls.author,
         )
+
+    def sub_test_em(self, urls, status):
+        for name, args in urls:
+            with self.subTest(name=name):
+                url = reverse(name, args=args)
+                response = self.client.get(url)
+                return self.assertEqual(response.status_code, status)
 
     def test_non_note_page_avaiability(self):
         urls = (
@@ -68,10 +74,3 @@ class TestRoutes(TestCase):
                 redirect_url = f'{login_url}?next={url}'
                 response = self.client.get(url)
                 self.assertRedirects(response, redirect_url)
-
-    def sub_test_em(self, urls, status):
-        for name, args in urls:
-            with self.subTest(name=name):
-                url = reverse(name, args=args)
-                response = self.client.get(url)
-                return self.assertEqual(response.status_code, status)
