@@ -28,6 +28,11 @@ class TestNotesPage(TestCase):
             all_notes.append(note)
         Note.objects.bulk_create(all_notes)
 
+        cls.REPEATED_URLS = (
+            ('notes:add', None),
+            ('notes:edit', (Note.objects.all()[0].slug,)),
+        )
+
     def test_note_count(self):
         self.client.force_login(TestNotesPage.author)
         response = self.client.get(TestNotesPage.HOME_URL)
@@ -46,15 +51,18 @@ class TestNotesPage(TestCase):
 
     def test_authorized_client_has_add_edit_forms(self):
         self.client.force_login(TestNotesPage.author)
-        urls = (
-            ('notes:add', None),
-            ('notes:edit', (Note.objects.all()[0].slug,)),
-        )
-        for name, args in urls:
+        for name, args in TestNotesPage.REPEATED_URLS:
             with self.subTest(name=name):
                 url = reverse(name, args=args)
                 response = self.client.get(url)
                 self.assertIn('form', response.context)
+
+    def test_anon_client_has_no_add_edit_forms(self):
+        for name, args in TestNotesPage.REPEATED_URLS:
+            with self.subTest(name=name):
+                url = reverse(name, args=args)
+                response = self.client.get(url)
+                self.assertNotIn('form', str(response))
 
     def test_authorized_client_has_del_form(self):
         self.client.force_login(self.author)
@@ -65,4 +73,14 @@ class TestNotesPage(TestCase):
         self.assertIn(
             f'/delete/{Note.objects.all()[0].slug}/',
             str(response.context['request'])
+        )
+
+    def test_anon_client_has_no_del_form(self):
+        response = self.client.get(
+            reverse('notes:delete',
+                    args=(Note.objects.all()[0].slug,))
+        )
+        self.assertIn(
+            'HttpResponseRedirect status_code=302',
+            str(response)
         )
