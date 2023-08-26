@@ -36,52 +36,33 @@ class TestNotesPage(TestCase):
             TestNotesPage.NOTE_TEST_NUM
         )
 
-#     def test_news_order(self):
-#         response = self.client.get(self.HOME_URL)
-#         news_list = response.context['news_list']
-#         all_dates = [news.date for news in news_list]
-#         # Сортируем полученный список по убыванию.
-#         sorted_dates = sorted(all_dates, reverse=True)
-#         # Проверяем, что исходный список был отсортирован правильно.
-#         self.assertEqual(all_dates, sorted_dates)
+    def test_note_order(self):
+        self.client.force_login(TestNotesPage.author)
+        response = self.client.get(TestNotesPage.HOME_URL)
+        note_list = response.context['note_list']
+        all_ids = [note.id for note in note_list]
+        sorted_ids = sorted(all_ids)
+        self.assertEqual(all_ids, sorted_ids)
 
+    def test_authorized_client_has_add_edit_forms(self):
+        self.client.force_login(TestNotesPage.author)
+        urls = (
+            ('notes:add', None),
+            ('notes:edit', (Note.objects.all()[0].slug,)),
+        )
+        for name, args in urls:
+            with self.subTest(name=name):
+                url = reverse(name, args=args)
+                response = self.client.get(url)
+                self.assertIn('form', response.context)
 
-# class TestDetailPage(TestCase):
-
-#     @classmethod
-#     def setUpTestData(cls):
-#         cls.news = News.objects.create(
-#             title='Тестовая новость', text='Просто текст.'
-#         )
-#         cls.detail_url = reverse('news:detail', args=(cls.news.id,))
-#         cls.author = User.objects.create(username='Комментатор')
-#         now = timezone.now()
-#         for index in range(2):
-#             comment = Comment.objects.create(
-#                 news=cls.news, author=cls.author, text=f'Tекст {index}',
-#             )
-#             comment.created = now + timedelta(days=index)
-#             comment.save()
-
-#     def test_comments_order(self):
-#         response = self.client.get(self.detail_url)
-#         # Проверяем, что объект новости находится в словаре контекста
-#         # под ожидаемым именем - названием модели.
-#         self.assertIn('news', response.context)
-#         # Получаем объект новости.
-#         news = response.context['news']
-#         # Получаем все комментарии к новости.
-#         all_comments = news.comment_set.all()
-#         # Проверяем, что время создания первого комментария в списке
-#         # меньше, чем время создания второго.
-#         self.assertLess(all_comments[0].created, all_comments[1].created)
-
-#     def test_anonymous_client_has_no_form(self):
-#         response = self.client.get(self.detail_url)
-#         self.assertNotIn('form', response.context)
-
-#     def test_authorized_client_has_form(self):
-#         # Авторизуем клиент при помощи ранее созданного пользователя.
-#         self.client.force_login(self.author)
-#         response = self.client.get(self.detail_url)
-#         self.assertIn('form', response.context)
+    def test_authorized_client_has_del_form(self):
+        self.client.force_login(self.author)
+        response = self.client.get(
+            reverse('notes:delete',
+                    args=(Note.objects.all()[0].slug,))
+        )
+        self.assertIn(
+            f'/delete/{Note.objects.all()[0].slug}/',
+            str(response.context['request'])
+        )
