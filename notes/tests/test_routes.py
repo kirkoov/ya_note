@@ -32,22 +32,14 @@ class TestRoutes(TestCase):
             ('users:logout', None),
             ('users:signup', None),
         )
-        for name, args in urls:
-            with self.subTest(name=name):
-                url = reverse(name, args=args)
-                response = self.client.get(url)
-                self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.sub_test_em(urls, HTTPStatus.OK)
 
     def test_detail_add_pages(self):
         urls = (
             ('notes:detail', (self.note.slug,)),
             ('notes:add', None),
         )
-        for name, args in urls:
-            with self.subTest(name=name):
-                url = reverse(name, args=args)
-                response = self.client.get(url)
-                self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.sub_test_em(urls, HTTPStatus.FOUND)
 
     def test_note_list_page(self):
         url = reverse('notes:list')
@@ -76,3 +68,10 @@ class TestRoutes(TestCase):
                 redirect_url = f'{login_url}?next={url}'
                 response = self.client.get(url)
                 self.assertRedirects(response, redirect_url)
+
+    def sub_test_em(self, urls, status):
+        for name, args in urls:
+            with self.subTest(name=name):
+                url = reverse(name, args=args)
+                response = self.client.get(url)
+                return self.assertEqual(response.status_code, status)
