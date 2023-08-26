@@ -38,10 +38,16 @@ class TestRoutes(TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_detail_page(self):
-        url = reverse('notes:detail', args=(self.note.slug,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+    def test_detail_add_pages(self):
+        urls = (
+            ('notes:detail', (self.note.slug,)),
+            ('notes:add', None),
+        )
+        for name, args in urls:
+            with self.subTest(name=name):
+                url = reverse(name, args=args)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_note_list_page(self):
         url = reverse('notes:list')
