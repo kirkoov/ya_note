@@ -20,7 +20,7 @@ class TestRoutes(TestCase):
         cls.reader = User.objects.create(username='Читатель Простой')
         cls.note = Note.objects.create(
             title='Заголовок заметки Льва Николаича',
-            text='Текст заметки Толстого Л.В.',
+            text='Текст заметки Толстого Л.Н.',
             author=cls.author,
         )
 
