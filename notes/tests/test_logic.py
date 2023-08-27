@@ -1,4 +1,4 @@
-# from http import HTTPStatus
+from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -17,6 +17,7 @@ User = get_user_model()
 class TestNoteCreation(TestCase):
     NOTE_TEXT = 'Текст новой заметки'
     NOTE_TITLE = 'NewNote'
+    NOTE_TEXT_UPD = 'Текст новой заметки UPDATED'
 
     @classmethod
     def setUpTestData(cls):
@@ -27,9 +28,9 @@ class TestNoteCreation(TestCase):
             text='Текст заметки Толстого Л.Н.',
             author=cls.author,
         )
-
         cls.url = reverse('notes:add')
         cls.auth_client = Client()
+        cls.reader_client = Client()
         cls.auth_client.force_login(cls.author)
         cls.form_data = {
             'title': cls.NOTE_TITLE,
@@ -62,4 +63,23 @@ class TestNoteCreation(TestCase):
             errors=f'{self.form_data["title"].lower() + WARNING}'
         )
         note_count = Note.objects.count()
-        self.assertEqual(note_count, 2)  # There're only two notes so far
+        self.assertEqual(note_count, 2)  # There're only two test notes so far
+
+    def test_author_can_delete_note(self):
+        self.auth_client.post(self.url, data=self.form_data)
+        note = Note.objects.all()[1]  # Picking up the second note
+        # От имени автора комментария отправляем DELETE-запрос на удаление.
+        response = self.auth_client.delete(
+            reverse('notes:delete', args=((note.slug,)))
+        )
+        self.assertRedirects(response, reverse('notes:success'))
+        note_count = Note.objects.count()
+        self.assertEqual(note_count, 1)  # There's only one left
+
+    def test_anonymous_user_cant_delete_comment_of_another_user(self):
+        self.reader_client.force_login(self.reader)
+        response = self.reader_client.delete(
+            reverse('notes:delete', args=((self.note.slug,))))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        note_count = Note.objects.count()
+        self.assertEqual(note_count, 1)
