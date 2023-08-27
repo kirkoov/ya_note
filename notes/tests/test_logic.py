@@ -4,14 +4,12 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-# from news.forms import BAD_WORDS, WARNING
+from notes.forms import WARNING
 from notes.models import Note
 
 
 User = get_user_model()
 
-# 1. Анонимный пользователь не может оставить заметку.
-# 2. Авторизованный пользователь может оставить заметку.
 # 3. Авторизованный пользователь может редактировать или удалять свои заметки.
 # 5. Авторизованный пользователь не может редактировать или удалять чужие заметки.
 
@@ -30,13 +28,9 @@ class TestNoteCreation(TestCase):
             author=cls.author,
         )
 
-        # Адрес создания заметки.
-        # cls.url = reverse('notes:detail', args=(cls.note.slug,))
         cls.url = reverse('notes:add')
-        # Создаём пользователя и клиент, логинимся в клиенте.
         cls.auth_client = Client()
         cls.auth_client.force_login(cls.author)
-        # Данные для POST-запроса при создании заметки.
         cls.form_data = {
             'title': cls.NOTE_TITLE,
             'text': cls.NOTE_TEXT,
@@ -57,3 +51,15 @@ class TestNoteCreation(TestCase):
         self.assertEqual(note.text, self.NOTE_TEXT)
         self.assertEqual(note.title, self.NOTE_TITLE)
         self.assertEqual(note.author, self.author)
+
+    def test_auth_user_cant_use_same_slug(self):
+        self.auth_client.post(self.url, data=self.form_data)
+        response = self.auth_client.post(self.url, data=self.form_data)
+        self.assertFormError(
+            response,
+            form='form',
+            field='slug',
+            errors=f'{self.form_data["title"].lower() + WARNING}'
+        )
+        note_count = Note.objects.count()
+        self.assertEqual(note_count, 2)  # There're only two notes so far
