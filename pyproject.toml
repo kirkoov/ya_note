@@ -45,10 +45,6 @@ exclude = [
     "migrations"
 ]
 
-[pytest]
-DJANGO_SETTINGS_MODULE = "yanote.settings"
-
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
