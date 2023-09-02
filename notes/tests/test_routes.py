@@ -12,8 +12,6 @@ User = get_user_model()
 
 class TestRoutes(TestCase):
 
-    REPEATED_URLS = ('notes:edit', 'notes:delete')
-
     @classmethod
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Лев Толстой')
