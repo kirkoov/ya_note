@@ -55,9 +55,9 @@ def test_pages_availability_for_auth_user(admin_client, name):
     ('notes:detail', 'notes:edit', 'notes:delete'),
 )
 def test_pages_availability_for_different_users(
-        parametrized_client, name, note, expected_status
+        parametrized_client, name, slug_for_args, expected_status
 ):
-    url = reverse(name, args=(note.slug,))
+    url = reverse(name, args=slug_for_args)
     response = parametrized_client.get(url)
     assert response.status_code == expected_status
 
@@ -65,22 +65,19 @@ def test_pages_availability_for_different_users(
 @pytest.mark.parametrize(
     # Вторым параметром передаём note_object,
     # в котором будет либо фикстура с объектом заметки, либо None.
-    'name, note_object',
+    'name, args',
     (
-        ('notes:detail', lazy_fixture('note')),
-        ('notes:edit', lazy_fixture('note')),
-        ('notes:delete', lazy_fixture('note')),
+        ('notes:detail', lazy_fixture('slug_for_args')),
+        ('notes:edit', lazy_fixture('slug_for_args')),
+        ('notes:delete', lazy_fixture('slug_for_args')),
         ('notes:add', None),
         ('notes:success', None),
         ('notes:list', None),
     ),
 )
-def test_redirects(client, name, note_object):
+def test_redirects(client, name, args):
     login_url = reverse('users:login')
-    if note_object is not None:
-        url = reverse(name, args=(note_object.slug,))
-    else:
-        url = reverse(name)
+    url = reverse(name, args=args)
     expected_url = f'{login_url}?next={url}'
     response = client.get(url)
     # Ожидаем, что со всех проверяемых страниц анонимный клиент
