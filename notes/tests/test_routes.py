@@ -24,53 +24,73 @@ class TestRoutes(TestCase):
             author=cls.author,
         )
 
-    def sub_test_em(self, urls, status):
+    def sub_test_em(self, urls, client, status):
         for name, args in urls:
             with self.subTest(name=name):
                 url = reverse(name, args=args)
-                response = self.client.get(url)
+                response = client.get(url)
                 return self.assertEqual(response.status_code, status)
 
-    def test_non_note_page_avaiability(self):
+    def check_author_reader_for_200(self, urls):
+        for another in TestRoutes.author, TestRoutes.reader:
+            self.client.force_login(another)
+            self.sub_test_em(urls, self.client, HTTPStatus.OK)
+
+    # Главная страница доступна анонимному пользователю.
+    # +Страницы регистрации пользователей, входа в учётную запись и выхода из
+    # неё доступны всем пользователям.
+    def test_page_avaiability_for_all_users(self):
         urls = (
             ('notes:home', None),
             ('users:login', None),
             ('users:logout', None),
             ('users:signup', None),
         )
-        self.sub_test_em(urls, HTTPStatus.OK)
+        self.sub_test_em(urls, self.client, HTTPStatus.OK)
+        self.check_author_reader_for_200(urls)
 
-    def test_detail_add_pages(self):
+    # Аутентифицированному пользователю доступна страница со списком заметок
+    # notes/, страница успешного добавления заметки done/, страница добавления
+    # новой заметки add/.
+    def test_page_avaiability_for_auth_user(self):
         urls = (
-            ('notes:detail', (self.note.slug,)),
+            ('notes:list', None),
+            ('notes:success', None),
             ('notes:add', None),
         )
-        self.sub_test_em(urls, HTTPStatus.FOUND)
+        self.check_author_reader_for_200(urls)
 
-    def test_note_list_page(self):
-        url = reverse('notes:list')
-        self.client.force_login(TestRoutes.author)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-    def test_availability_for_note_edit_and_delete(self):
-        users_statuses = (
-            (TestRoutes.author, HTTPStatus.OK),
-            (TestRoutes.reader, HTTPStatus.NOT_FOUND),
+    # Страницы отдельной заметки, удаления и редактирования заметки доступны
+    # только автору заметки. Если на эти страницы попытается зайти другой
+    # пользователь, вернётся ошибка 404.
+    def test_page_avaiability_for_note_author_only(self):
+        urls = (
+            ('notes:detail', (TestRoutes.note.slug,)),
+            ('notes:delete', (TestRoutes.note.slug,)),
+            ('notes:edit', (TestRoutes.note.slug,)),
         )
-        for user, status in users_statuses:
-            self.client.force_login(user)
-            for name in TestRoutes.REPEATED_URLS:
-                with self.subTest(user=user, name=name):
-                    url = reverse(name, args=(self.note.slug,))
-                    response = self.client.get(url)
-                    self.assertEqual(response.status_code, status)
+        self.client.force_login(TestRoutes.author)
+        self.sub_test_em(urls, self.client, HTTPStatus.OK)
+        self.client.force_login(TestRoutes.reader)
+        self.sub_test_em(urls, self.client, HTTPStatus.NOT_FOUND)
 
-    def test_redirect_for_anonymous_client(self):
+    # При попытке перейти на страницу списка заметок, страницу успешного
+    # добавления записи, страницу добавления заметки, отдельной заметки,
+    # редактирования или удаления заметки анонимный пользователь
+    # перенаправляется на страницу логина.
+    def test_page_avaiability_for_anon_user(self):
+        urls = (
+            ('notes:list', None),
+            ('notes:success', None),
+            ('notes:detail', (TestRoutes.note.slug,)),
+            ('notes:add', None),
+            ('notes:delete', (TestRoutes.note.slug,)),
+            ('notes:edit', (TestRoutes.note.slug,)),
+        )
         login_url = reverse('users:login')
-        for name in TestRoutes.REPEATED_URLS:
-            with self.subTest(name=name):
-                url = reverse(name, args=(self.note.slug,))
-                redirect_url = f'{login_url}?next={url}'
-                response = self.client.get(url)
+        for url, args in urls:
+            with self.subTest(url=url):
+                url_ = reverse(url, args=args)
+                redirect_url = f'{login_url}?next={url_}'
+                response = self.client.get(url_)
                 self.assertRedirects(response, redirect_url)
